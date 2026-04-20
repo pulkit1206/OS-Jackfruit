@@ -1,0 +1,15 @@
+==== CLI and IPC ====
+--- start command ---
+Success: Container c3 started (PID 10009)
+c3 started OK
+
+--- ps command ---
+ID         PID      STATE      LIMITS(S/H)
+c3         10009    running    40/64 MiB
+c2         9992     running    40/64 MiB
+c1         9989     running    40/64 MiB
+
+
+--- stop command ---
+Success: Stop signal sent to c3
+c3 stop sent

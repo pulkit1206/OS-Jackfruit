@@ -1,0 +1,26 @@
+==== scheduling experiment ====
+--- containers: normal vs low priority ---
+ID         PID      STATE      LIMITS(S/H)
+sched_lo   10039    running    40/64 MiB
+sched_hi   10036    running    40/64 MiB
+memhard    10025    running    10/20 MiB
+memsoft    10014    running    10/80 MiB
+c3         10009    stopped    40/64 MiB
+c2    
+
+--- host-side ps showing nice values ---
+    PID  NI COMMAND         %CPU
+
+--- logs from high-priority container ---
+cpu_hog alive elapsed=2 accumulator=5594161247486581330
+cpu_hog alive elapsed=3 accumulator=5263170908151495248
+cpu_hog alive elapsed=4 accumulator=5013317248970968936
+cpu_hog alive elapsed=5 accumulator=17079437609589458513
+
+
+--- logs from low-priority container ---
+cpu_hog alive elapsed=2 accumulator=8129603782137867
+cpu_hog alive elapsed=3 accumulator=9794009446110502701
+cpu_hog alive elapsed=4 accumulator=5104962205148990695
+cpu_hog alive elapsed=5 accumulator=1429688170707625773
+

@@ -1,0 +1,15 @@
+==== clean teardown ====
+--- ps aux: no zombie container processes ---
+root       10014  0.7  2.6 320912 320572 ?       S    00:40   0:00 /memory_hog 4 500
+root       10025  1.0  2.8 353712 353368 ?       S    00:40   0:00 /memory_hog 4 300
+
+--- dmesg: module unload messages ---
+[ 8658.416340] [container_monitor] Registered container=c3 pid=10009
+[ 8658.426032] [container_monitor] Registered container=memsoft pid=10014
+[ 8666.450597] [container_monitor] Registered container=memhard pid=10025
+[ 8676.486762] [container_monitor] Registered container=sched_hi pid=10036
+[ 8676.490553] [container_monitor] Registered container=sched_lo pid=10039
+
+--- /tmp/mini_runtime.sock gone ---
+/tmp/mini_runtime.sock
+WARNING: socket still exists

@@ -1,0 +1,13 @@
+==== hard-limit enforcement ====
+--- dmesg hard-limit (KILL) events ---
+[ 8291.065645] [container_monitor] Registered container=memhard pid=9597
+[ 8666.450597] [container_monitor] Registered container=memhard pid=10025
+
+--- container state after kill ---
+ID         PID      STATE      LIMITS(S/H)
+memhard    10025    running    10/20 MiB
+memsoft    10014    running    10/80 MiB
+c3         10009    running    40/64 MiB
+c2         9992     running    40/64 MiB
+c1         9989     running    40/64 MiB
+
