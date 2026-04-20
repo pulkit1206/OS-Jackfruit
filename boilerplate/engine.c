@@ -554,6 +554,8 @@ static int launch_container(supervisor_ctx_t *ctx, control_request_t *req, contr
     return 0;
 }
 
+static supervisor_ctx_t *g_ctx = NULL;
+
 static void handle_request(supervisor_ctx_t *ctx, int client_fd)
 {
     control_request_t req;
@@ -593,14 +595,37 @@ static void handle_request(supervisor_ctx_t *ctx, int client_fd)
         break;
     }
     case CMD_PS: {
-...
+        pthread_mutex_lock(&ctx->metadata_lock);
+        container_record_t *curr = ctx->containers;
+        char *ptr = resp.message;
+        size_t left = sizeof(resp.message) - 1;
+        int n = snprintf(ptr, left, "%-10s %-8s %-10s %-10s\n", "ID", "PID", "STATE", "LIMITS(S/H)");
+        if (n > 0) { ptr += n; left -= n; }
+        while (curr && left > 0) {
+            n = snprintf(ptr, left, "%-10s %-8d %-10s %lu/%lu MiB\n",
+                         curr->id, curr->host_pid, state_to_string(curr->state),
+                         curr->soft_limit_bytes >> 20, curr->hard_limit_bytes >> 20);
+            if (n > 0) { ptr += n; left -= n; }
+            curr = curr->next;
+        }
         pthread_mutex_unlock(&ctx->metadata_lock);
         if (write(client_fd, &resp, sizeof(resp)) != sizeof(resp)) perror("write response");
         close(client_fd);
         break;
     }
     case CMD_LOGS: {
-...
+        char log_path[PATH_MAX];
+        snprintf(log_path, sizeof(log_path), "%s/%s.log", LOG_DIR, req.container_id);
+        int fd = open(log_path, O_RDONLY);
+        if (fd < 0) {
+            snprintf(resp.message, sizeof(resp.message), "No logs found for %s", req.container_id);
+        } else {
+            off_t size = lseek(fd, 0, SEEK_END);
+            off_t offset = (size > (off_t)sizeof(resp.message) - 1) ? size - (sizeof(resp.message) - 1) : 0;
+            lseek(fd, offset, SEEK_SET);
+            read(fd, resp.message, sizeof(resp.message) - 1);
+            close(fd);
+        }
         if (write(client_fd, &resp, sizeof(resp)) != sizeof(resp)) perror("write response");
         close(client_fd);
         break;
@@ -657,11 +682,11 @@ static void handle_sigchld(int sig)
                     }
 
                     if (curr->waiter_fd != -1) {
-                        control_response_t resp;
-                        memset(&resp, 0, sizeof(resp));
-                        resp.status = 0;
-                        snprintf(resp.message, sizeof(resp.message), "Container %s exited", curr->id);
-                        write(curr->waiter_fd, &resp, sizeof(resp));
+                        control_response_t wait_resp;
+                        memset(&wait_resp, 0, sizeof(wait_resp));
+                        wait_resp.status = 0;
+                        snprintf(wait_resp.message, sizeof(wait_resp.message), "Container %s exited", curr->id);
+                        write(curr->waiter_fd, &wait_resp, sizeof(wait_resp));
                         close(curr->waiter_fd);
                         curr->waiter_fd = -1;
                     }
@@ -677,8 +702,6 @@ static void handle_sigchld(int sig)
         }
     }
 }
-
-static supervisor_ctx_t *g_ctx = NULL;
 
 static void handle_signal(int sig)
 {
