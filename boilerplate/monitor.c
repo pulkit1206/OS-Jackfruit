@@ -50,7 +50,10 @@ static LIST_HEAD(monitored_containers);
 static DEFINE_MUTEX(monitor_lock);
 
 /* --- Provided: internal device / timer state --- */
-...
+static dev_t dev_num;
+static struct cdev c_dev;
+static struct class *cl;
+static struct timer_list monitor_timer;
 /* ---------------------------------------------------------------
  * Timer Callback - fires every CHECK_INTERVAL_SEC seconds.
  * --------------------------------------------------------------- */
@@ -141,7 +144,47 @@ static long monitor_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 }
 
 /* --- Provided: file operations --- */
-...
+static struct file_operations fops = {
+    .owner = THIS_MODULE,
+    .unlocked_ioctl = monitor_ioctl,
+};
+
+static int __init monitor_init(void)
+{
+    if (alloc_chrdev_region(&dev_num, 0, 1, DEVICE_NAME) < 0)
+        return -1;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+    cl = class_create(DEVICE_NAME);
+#else
+    cl = class_create(THIS_MODULE, DEVICE_NAME);
+#endif
+
+    if (IS_ERR(cl)) {
+        unregister_chrdev_region(dev_num, 1);
+        return PTR_ERR(cl);
+    }
+
+    if (IS_ERR(device_create(cl, NULL, dev_num, NULL, DEVICE_NAME))) {
+        class_destroy(cl);
+        unregister_chrdev_region(dev_num, 1);
+        return -1;
+    }
+
+    cdev_init(&c_dev, &fops);
+    if (cdev_add(&c_dev, dev_num, 1) < 0) {
+        device_destroy(cl, dev_num);
+        class_destroy(cl);
+        unregister_chrdev_region(dev_num, 1);
+        return -1;
+    }
+
+    timer_setup(&monitor_timer, timer_callback, 0);
+    mod_timer(&monitor_timer, jiffies + CHECK_INTERVAL_SEC * HZ);
+
+    printk(KERN_INFO "[container_monitor] Module loaded. Device: /dev/%s\n", DEVICE_NAME);
+    return 0;
+}
 /* --- Provided: Module Exit --- */
 static void __exit monitor_exit(void)
 {
