@@ -773,6 +773,20 @@ static int run_supervisor(const char *rootfs)
     printf("Supervisor shutting down...\n");
 
 cleanup:
+    /* Kill all running containers */
+    pthread_mutex_lock(&ctx.metadata_lock);
+    container_record_t *it = ctx.containers;
+    while (it) {
+        if (it->state == CONTAINER_RUNNING) {
+            it->stop_requested = 1;
+            kill(it->host_pid, SIGTERM);
+        }
+        it = it->next;
+    }
+    pthread_mutex_unlock(&ctx.metadata_lock);
+    /* Brief wait for containers to exit and be reaped by SIGCHLD handler */
+    sleep(1);
+
     bounded_buffer_begin_shutdown(&ctx.log_buffer);
     if (ctx.logger_thread) {
         pthread_join(ctx.logger_thread, NULL);
