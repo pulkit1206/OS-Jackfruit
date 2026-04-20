@@ -55,6 +55,75 @@ static struct cdev c_dev;
 static struct class *cl;
 static struct timer_list monitor_timer;
 /* ---------------------------------------------------------------
+ * Provided: RSS Helper
+ *
+ * Returns the Resident Set Size in bytes for the given PID,
+ * or -1 if the task no longer exists.
+ * --------------------------------------------------------------- */
+static long get_rss_bytes(pid_t pid)
+{
+    struct task_struct *task;
+    struct mm_struct *mm;
+    long rss_pages = 0;
+
+    rcu_read_lock();
+    task = pid_task(find_vpid(pid), PIDTYPE_PID);
+    if (!task) {
+        rcu_read_unlock();
+        return -1;
+    }
+    get_task_struct(task);
+    rcu_read_unlock();
+
+    mm = get_task_mm(task);
+    if (mm) {
+        rss_pages = get_mm_rss(mm);
+        mmput(mm);
+    }
+    put_task_struct(task);
+
+    return rss_pages * PAGE_SIZE;
+}
+
+/* ---------------------------------------------------------------
+ * Provided: soft-limit helper
+ *
+ * Log a warning when a process exceeds the soft limit.
+ * --------------------------------------------------------------- */
+static void log_soft_limit_event(const char *container_id,
+                                 pid_t pid,
+                                 unsigned long limit_bytes,
+                                 long rss_bytes)
+{
+    printk(KERN_WARNING
+           "[container_monitor] SOFT LIMIT container=%s pid=%d rss=%ld limit=%lu\n",
+           container_id, pid, rss_bytes, limit_bytes);
+}
+
+/* ---------------------------------------------------------------
+ * Provided: hard-limit helper
+ *
+ * Kill a process when it exceeds the hard limit.
+ * --------------------------------------------------------------- */
+static void kill_process(const char *container_id,
+                         pid_t pid,
+                         unsigned long limit_bytes,
+                         long rss_bytes)
+{
+    struct task_struct *task;
+
+    rcu_read_lock();
+    task = pid_task(find_vpid(pid), PIDTYPE_PID);
+    if (task)
+        send_sig(SIGKILL, task, 1);
+    rcu_read_unlock();
+
+    printk(KERN_WARNING
+           "[container_monitor] HARD LIMIT container=%s pid=%d rss=%ld limit=%lu\n",
+           container_id, pid, rss_bytes, limit_bytes);
+}
+
+/* ---------------------------------------------------------------
  * Timer Callback - fires every CHECK_INTERVAL_SEC seconds.
  * --------------------------------------------------------------- */
 static void timer_callback(struct timer_list *t)
