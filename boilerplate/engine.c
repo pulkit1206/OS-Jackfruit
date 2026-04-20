@@ -341,6 +341,10 @@ void *logging_thread(void *arg)
     supervisor_ctx_t *ctx = (supervisor_ctx_t *)arg;
     log_item_t item;
 
+    /*
+     * Keep popping until the buffer is empty AND shutting_down is set.
+     * bounded_buffer_pop returns -1 only when buffer is empty AND shutting_down.
+     */
     while (bounded_buffer_pop(&ctx->log_buffer, &item) == 0) {
         char log_file_path[PATH_MAX];
         snprintf(log_file_path, sizeof(log_file_path), "%s/%s.log", LOG_DIR, item.container_id);
@@ -819,6 +823,18 @@ cleanup:
         unlink(CONTROL_PATH);
     }
     if (ctx.monitor_fd != -1) close(ctx.monitor_fd);
+
+    /* Final metadata heap cleanup */
+    pthread_mutex_lock(&ctx.metadata_lock);
+    container_record_t *curr = ctx.containers;
+    while (curr) {
+        container_record_t *tmp = curr;
+        curr = curr->next;
+        free(tmp);
+    }
+    ctx.containers = NULL;
+    pthread_mutex_unlock(&ctx.metadata_lock);
+
     bounded_buffer_destroy(&ctx.log_buffer);
     pthread_mutex_destroy(&ctx.metadata_lock);
     return 0;
@@ -937,17 +953,6 @@ static int cmd_ps(void)
     memset(&req, 0, sizeof(req));
     req.kind = CMD_PS;
 
-    /*
-     * TODO:
-     * The supervisor should respond with container metadata.
-     * Keep the rendering format simple enough for demos and debugging.
-     */
-    printf("Expected states include: %s, %s, %s, %s, %s\n",
-           state_to_string(CONTAINER_STARTING),
-           state_to_string(CONTAINER_RUNNING),
-           state_to_string(CONTAINER_STOPPED),
-           state_to_string(CONTAINER_KILLED),
-           state_to_string(CONTAINER_EXITED));
     return send_control_request(&req);
 }
 
