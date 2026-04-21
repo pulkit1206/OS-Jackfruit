@@ -1,7 +1,6 @@
-#PES1UG24CS346
 # Multi-Container Runtime
 
-**Team:** [Student 1 Name/SRN], [Student 2 Name/SRN]
+**Team:** Pulkit Bhardwaj PES1UG24CS346, Priyansh Soni PES1UG24CS344
 
 A lightweight Linux container runtime with a long-running supervisor and a kernel-space memory monitor.
 
@@ -65,14 +64,14 @@ sudo rmmod monitor
 
 | # | What to Demonstrate | Description |
 |---|---------------------|-------------|
-| 1 | Multi-container supervision | [Screenshot 1 Placeholder: Multiple containers running] |
-| 2 | Metadata tracking | [Screenshot 2 Placeholder: `engine ps` output] |
-| 3 | Bounded-buffer logging | [Screenshot 3 Placeholder: `engine logs` and log files] |
-| 4 | CLI and IPC | [Screenshot 4 Placeholder: CLI interaction] |
-| 5 | Soft-limit warning | [Screenshot 5 Placeholder: `dmesg` showing soft limit warning] |
-| 6 | Hard-limit enforcement | [Screenshot 6 Placeholder: `dmesg` showing SIGKILL for hard limit] |
-| 7 | Scheduling experiment | [Screenshot 7 Placeholder: Measurements showing priority difference] |
-| 8 | Clean teardown | [Screenshot 8 Placeholder: `ps aux` showing no zombies] |
+| 1 | Multi-container supervision | ![Multi-container supervision](boilerplate/screenshots/shot_1_multi-container_supervision.png) |
+| 2 | Metadata tracking | ![Metadata tracking](boilerplate/screenshots/shot_2_metadata_tracking.png) |
+| 3 | Bounded-buffer logging | ![Bounded-buffer logging](boilerplate/screenshots/shot_3_bounded-buffer_logging.png) |
+| 4 | CLI and IPC | ![CLI and IPC](boilerplate/screenshots/shot_4_CLI_and_IPC.png) |
+| 5 | Soft-limit warning | ![Soft-limit warning](boilerplate/screenshots/shot_5_soft-limit_warning.png) |
+| 6 | Hard-limit enforcement | ![Hard-limit enforcement](boilerplate/screenshots/shot_6_hard-limit_enforcement.png) |
+| 7 | Scheduling experiment | ![Scheduling experiment](boilerplate/screenshots/shot_7_scheduling_experiment.png) |
+| 8 | Clean teardown | ![Clean teardown](boilerplate/screenshots/shot_8_clean_teardown.png) |
 
 ---
 
